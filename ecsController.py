@@ -28,9 +28,15 @@ class ecsContoller:
         clusterServiceMap = self.findServices() # Get all ECS running
         return clusterServiceMap
     """
-    Main entry point to signal a and of developer day event
+    Main entry point to signal a STOP of developer day event
+    The current running ECS services  will have their current desired count stored into a database and then their desired count will be set to 0 in the ecs clusters
     """
     def stopDayEvent(self):
+
+        # clean out what is currenty in the database
+        clusterStoredMap = self.loadState()
+        self._deleteState(clusterStoredMap)
+
         clusterServiceMap = self.findServices()  # Get all ECS running
         clusterServiceStateMap = self.getDesiredState(clusterServiceMap) # find current desired Map Levels
         self.storeState(clusterServiceStateMap) # store in the db the current levels
@@ -39,10 +45,19 @@ class ecsContoller:
             self.logger.info("All the running services have been updated to have 0 desired state - all stopping")
         else:
             self.logger.warning("Not all services could have their desired state updated")
-        return
+        return result
 
-
-
+    """
+    Main entry point to signal a START of developer day event
+    """
+    def startDayEvent(self):
+        clusterStoredMap = self.loadState()
+        result = self.setState(clusterStoredMap)
+        if result:
+            self.logger.info("All the running services have been updated to their original desired State levels")
+        else:
+            self.logger.warning("Not all services could have their desired state updated")
+        return result
 
     """
     Checks the SERVICE ARN for the special searchTag - and see if the Tag is set to TRUE
@@ -94,6 +109,28 @@ class ecsContoller:
                     else:
                         self.logger.warning(f"Service Name {sname} has no task running - so ignoring")
         return resultMap
+
+    """
+    Delete all records passed from the database 
+    expects a MAP of clusters --- [ [Service Arns, service Name, desired state]]
+    """
+    def _deleteState(self, clusterMap):
+
+        client = boto3.client('dynamodb', region_name=self.dbregion)
+
+        for cluster in clusterMap:
+            serviceList = clusterMap[cluster]
+            for service in serviceList:
+                sarn = service[0]
+                sname = service[1]
+
+                self.logger.info(f"Clearing out DB Records {sname} --> service arn {sarn}")
+                response = client.delete_item(
+                                                TableName=self.ecsTable,
+                                                Key={
+                                                    'ecsArn': {'S': sarn},
+                                                    'region' : {'S' : self.region}
+                                                    })
 
     """"
     Writes the cluster/service desired state into the dynamoDB table.
@@ -173,7 +210,9 @@ class ecsContoller:
     def setState(self,clusterMap, overrideDesiredCount=None):
         passed = True
 
+        self.logger.info(f"----------Setting the State of the cluster map: overrideDesiredCount {overrideDesiredCount}---------- \n {clusterMap} \n------------------------")
         for cluster in clusterMap:
+            self.logger.info(f"Setting state for cluster {cluster}")
             serviceList = clusterMap[cluster]
             for service in serviceList:
                 serArn = "none"
@@ -198,7 +237,7 @@ class ecsContoller:
                     self.logger.exception(e)
                     passed = False
 
-            return passed
+        return passed
 
 
 
