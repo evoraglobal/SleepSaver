@@ -52,10 +52,10 @@ class test_ecsController(unittest.TestCase):
 
     def test_setState(self):
         logger.info("-----Aboout to Set the STATE for the cluster to 2 services")
-        clustermap =  {'arn:aws:ecs:eu-west-2:307494535005:cluster/Cheddar2': [['arn:aws:ecs:eu-west-2:307494535005:service/Cheddar2/TestCon', 'TestCon', 2]], 'arn:aws:ecs:eu-west-2:307494535005:cluster/Cheddar4': [['arn:aws:ecs:eu-west-2:307494535005:service/Cheddar4/EnvTest', 'EnvTest', 2]], 'arn:aws:ecs:eu-west-2:307494535005:cluster/EcsNetTest': [['arn:aws:ecs:eu-west-2:307494535005:service/EcsNetTest/EcsNetTestService', 'EcsNetTestService', 2]]}
+        clustermap =  {'arn:aws:ecs:eu-west-2:307494535005:cluster/Cheddar2': [['arn:aws:ecs:eu-west-2:307494535005:service/Cheddar2/TestCon', 'TestCon', 2]], 'arn:aws:ecs:eu-west-2:307494535005:cluster/Cheddar4': [['arn:aws:ecs:eu-west-2:307494535005:service/Cheddar4/EnvTest', 'EnvTest', 2]]}
         ecs = ecsContoller(REGION, SEARCHTAG)
         result = ecs.setState(clustermap)
-        self.assertTrue(result, msg="could not set th desired count on all servers")
+        self.assertTrue(result, msg="could not set the desired count on all servers")
 
 
 if __name__ == '__main__':

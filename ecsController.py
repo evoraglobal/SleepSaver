@@ -33,12 +33,21 @@ class ecsContoller:
     """
     def stopDayEvent(self):
 
+
+
+
+        clusterServiceMap = self.findServices()  # Get all ECS running
+        clusterServiceStateMap = self.getDesiredState(clusterServiceMap) # find current desired Map Levels
+
+        if len(clusterServiceStateMap) ==0:
+            self.logger.info("There are currently no active ECS Services - they all seemed stopped or do not exist")
+            return True
+
         # clean out what is currenty in the database
         clusterStoredMap = self.loadState()
         self._deleteState(clusterStoredMap)
 
-        clusterServiceMap = self.findServices()  # Get all ECS running
-        clusterServiceStateMap = self.getDesiredState(clusterServiceMap) # find current desired Map Levels
+
         self.storeState(clusterServiceStateMap) # store in the db the current levels
         result= self.setState(clusterServiceStateMap,overrideDesiredCount=0)
         if result:
@@ -52,6 +61,11 @@ class ecsContoller:
     """
     def startDayEvent(self):
         clusterStoredMap = self.loadState()
+
+        if len(clusterStoredMap)==0:
+            self.logger.info("There was no stored desired Stated for ECS Services in the database - so nothing requires starting")
+            return True
+
         result = self.setState(clusterStoredMap)
         if result:
             self.logger.info("All the running services have been updated to their original desired State levels")
@@ -92,7 +106,7 @@ class ecsContoller:
                 serviceArnList = serviceArnList[0:10]
             # Check for Clusters that have no enabled services
             if itemCount > 0:
-                resultMap[cluster] = []
+
                 response = self.client.describe_services(
                                                         cluster=cluster,
                                                         services=serviceArnList
@@ -103,6 +117,11 @@ class ecsContoller:
                     runningCount = serviceMap["runningCount"]
                     sname  = serviceMap["serviceName"]
                     if runningCount  >0:
+
+                        # Ok there is something running so we had better make a results entry for this cluster
+                        if cluster not in resultMap:
+                            resultMap[cluster] = []
+
                         desiredCount = serviceMap["desiredCount"]
                         self.logger.info(f"Cluster {cluster} - Service Name  {sname} ARN {sarn} has Task desired Count {desiredCount} ")
                         resultMap[cluster].append([sarn,sname, desiredCount])

@@ -19,7 +19,7 @@ consoleHandler.setFormatter(formatter)
 logger.addHandler(consoleHandler)
 
 # Comma separated list of regions to monitor
-regionstr = env.get(REGIONLISTENV, "eu-west-2, eu-west-1")
+regionstr = env.get(REGIONLISTENV, "eu-west-2,eu-west-1")
 regionlist = regionstr.split(',')
 
 SEARCHTAG = "DEVDAYTERM"
@@ -44,6 +44,20 @@ def lambda_handler(event, context):
 
 
     rf = ResourceFinder(searchTerm)
+    for region in regionlist:
+        region = region.strip()
+        logger.info(f"-----Searching for resources {region}-----------")
+        controlledResources = rf.findResourcesFor(region)
+        if ev == START:
+            rf.startResources(region)
+        else:
+            rf.stopResources(region)
+
+        logger.info(f">>>>>>> Finished {ev} Operation For Following Resources<<<<<<<<")
+        for crType in controlledResources:
+            arnList = controlledResources[crType]
+            for arn in arnList:
+                logger.info(f"Resource Type {crType} - ARN {arn}")
 
     return {
         'statusCode': 200,

@@ -1,6 +1,7 @@
 import logging
 import os
 import boto3
+from ecsController import ecsContoller
 
 
 
@@ -22,8 +23,38 @@ class ResourceFinder:
 
 
 
-
+    """
+    Catalogue Resources that are being controlled - by searching for the tag. This is used for auditing purposes
+    """
     def findResourcesFor(self, region):
         allRecources={}
 
-        allRecources[ResourceFinder.ECS]=
+        ecs = ecsContoller(region, self.searchTag)
+
+        allRecources[ResourceFinder.ECS]= ecs.findResourcesForECS()
+
+        return allRecources
+
+    """
+    Start all the resources which has the search tag 
+    """
+    def startResources(self, region):
+
+        ecs = ecsContoller(region, self.searchTag)
+        allok= ecs.startDayEvent()
+        if allok:
+            self.logger.info("****All ECS Started ok****")
+        else:
+            self.logger.warning("###### Not All the ECS Started OK #######")
+
+    """
+    Stops all the resources which has  the search tag
+    """
+    def stopResources(self, region):
+        ecs = ecsContoller(region, self.searchTag)
+        allok = ecs.stopDayEvent()
+        if allok:
+            self.logger.info("****All ECS Stopped ok****")
+        else:
+            self.logger.warning("###### Not All the ECS Stopped OK #######")
+
