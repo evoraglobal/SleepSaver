@@ -1,4 +1,4 @@
-from ecsController import ecsContoller
+from ecsController import ecsController
 import unittest
 import logging
 
@@ -12,7 +12,7 @@ class test_deleteState(unittest.TestCase):
     def test_delete(self):
         logger.info("-----Testing delete State method------")
 
-        ecs = ecsContoller(REGION, SEARCHTAG)
+        ecs = ecsController(REGION, SEARCHTAG)
         clustermap  =ecs.loadState()
         orig = len(clustermap)
         self.assertTrue(orig>0, msg="database should not have been empty")

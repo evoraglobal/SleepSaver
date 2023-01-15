@@ -1,4 +1,5 @@
-from ecsController import ecsContoller
+from ecsController import ecsController
+from ec2Controller import ec2Controller
 import unittest
 import logging
 
@@ -7,12 +8,19 @@ SEARCHTAG = 'DEVDAY'
 
 class test_startDayEvent(unittest.TestCase):
 
-    def test_start(self):
-        logger.info("-----Testing start day event method------")
+    def test_start_ecs(self):
+        logger.info("-----Testing start day event method ECS------")
 
-        ecs = ecsContoller(REGION, SEARCHTAG)
+        ecs = ecsController(REGION, SEARCHTAG)
         result = ecs.startDayEvent()
-        self.assertTrue(result, msg="Start Day Event didnt work")
+        self.assertTrue(result, msg="Start Day Event didnt work for ecs")
+
+    def test_start_ec2(self):
+        logger.info("-----Testing start day event method EC2------")
+
+        ec2 = ec2Controller(REGION, SEARCHTAG)
+        result = ec2.startDayEvent()
+        self.assertTrue(result, msg="Start Day Event didnt work for ec2")
 
 
 if __name__ == '__main__':

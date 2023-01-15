@@ -8,7 +8,7 @@ import os
 DBTABLEENV = "ECSDYNTABLE"
 DBREGION = "ECSDBREGION"
 
-class ecsContoller:
+class ecsController:
 
     def __init__(self, region, searchTag):
         self.region = region

@@ -1,4 +1,4 @@
-from ecsController import ecsContoller
+from ecsController import ecsController
 import unittest
 import logging
 
@@ -11,13 +11,13 @@ class test_ecsController(unittest.TestCase):
 
     def test_findServices(self):
 
-        ecs  = ecsContoller(REGION, SEARCHTAG)
+        ecs  = ecsController(REGION, SEARCHTAG)
 
         serviceArns = ecs.findServices()
         logger.info(f"Enabled Service ARNS {serviceArns}")
 
     def test_getDesiredState(self):
-        ecs = ecsContoller(REGION, SEARCHTAG)
+        ecs = ecsController(REGION, SEARCHTAG)
 
         serviceArns = ecs.findServices()
         logger.info("---------About to get the Desired States ---------")
@@ -26,7 +26,7 @@ class test_ecsController(unittest.TestCase):
 
     def test_storeState(self):
         logger.info("-----Testing Store State method------")
-        ecs = ecsContoller(REGION, SEARCHTAG)
+        ecs = ecsController(REGION, SEARCHTAG)
 
         serviceArns = ecs.findServices()
         logger.info("---------About to get the Desired States ---------")
@@ -38,13 +38,13 @@ class test_ecsController(unittest.TestCase):
 
     def test_loadState(self):
         logger.info("------Testing the load state method------")
-        ecs = ecsContoller(REGION, SEARCHTAG)
+        ecs = ecsController(REGION, SEARCHTAG)
         clustermap  =ecs.loadState()
         logger.info(f"******LOADED MAP > {clustermap} ")
         keys = list(clustermap.keys())
         nokeys = len(keys)
         self.assertTrue(nokeys>1,msg=" We didnt get the expected rows from the database")
-        ecs = ecsContoller("us-east-2", SEARCHTAG)
+        ecs = ecsController("us-east-2", SEARCHTAG)
         clustermap  =ecs.loadState()
         keys = list(clustermap.keys())
         nokeys = len(keys)
@@ -53,7 +53,7 @@ class test_ecsController(unittest.TestCase):
     def test_setState(self):
         logger.info("-----Aboout to Set the STATE for the cluster to 2 services")
         clustermap =  {'arn:aws:ecs:eu-west-2:307494535005:cluster/Cheddar2': [['arn:aws:ecs:eu-west-2:307494535005:service/Cheddar2/TestCon', 'TestCon', 2]], 'arn:aws:ecs:eu-west-2:307494535005:cluster/Cheddar4': [['arn:aws:ecs:eu-west-2:307494535005:service/Cheddar4/EnvTest', 'EnvTest', 2]]}
-        ecs = ecsContoller(REGION, SEARCHTAG)
+        ecs = ecsController(REGION, SEARCHTAG)
         result = ecs.setState(clustermap)
         self.assertTrue(result, msg="could not set the desired count on all servers")
 

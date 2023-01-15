@@ -9,7 +9,7 @@ import os
 Ec2 controller: finds ec2 instances that have a devday tag, has the ability to stop, start and to modify their shutdown behaviour - to avoid termination
 """
 
-class ec2Contoller:
+class ec2Controller:
 
     STOPBEHAVIOUR = 'stop'
 
@@ -23,37 +23,89 @@ class ec2Contoller:
 
 
     """
-    Main entry point to be called from ResourceFinder - finds all EC2 Services that have a Task running
-    Returns a MAP[InstanceId] = [ list of Instance ARNS] or []
+    Main entry point to be called from ResourceFinder - finds all EC2 Services that have been tagged
+    Returns a  Map [instance id] : {state , platform , name}
     """
-    def findResourcesForECS(self):
-        clusterServiceMap = self.findServices() # Get all EC2 running
-        return clusterServiceMap
+    def findResourcesForEC2(self):
+        ec2Map = self.findServices(running=False) # Get all EC2 running or not that are tagged
+        return ec2Map
     """
     Main entry point to signal a STOP of developer day event
-    The current running ECS services  will have their current desired count stored into a database and then their desired count will be set to 0 in the ecs clusters
+    All tagged and running EC2 servers will be stopped
     """
     def stopDayEvent(self):
 
         result = True
+        totalResult=True
 
 
-        ec2Map = self.findServices()  # Get all ECS running
+        ec2Map = self.findServices(running=True) # Find all those that are currently running
 
         if len(ec2Map) ==0:
             self.logger.info("There are currently no active EC2 instances that are tagged - they all seemed stopped or do not exist")
             return True
 
+        self.correctShutDownBehaviour(ec2Map)
 
-        return result
+        try:
+
+            for ec2instance in ec2Map:
+                ec2Dict = ec2Map[ec2instance]
+                state = ec2Dict["state"]
+                platform = ec2Dict["platform"]
+                name = ec2Dict["name"]
+                if state=="running":
+                    response  = self.client.stop_instances(
+                        InstanceIds = [ec2instance]
+                    )
+                    cs =  response['StoppingInstances'][0]['CurrentState']['Name']
+                    self.logger.info(f"Shutting down instance {name} id {ec2instance}, plaform {platform} moving from running --> {cs}")
+                    result = ("stopping" == cs)
+                    if not result:
+                        totalResult = False
+        except Exception as e:
+            self.logger.error("Could not stop all EC2 instances ")
+            self.logger.exception(e)
+            totalResult = False
+
+        return totalResult
 
     """
     Main entry point to signal a START of developer day event
+    Finds all tagged Ec2 servers that are currently stopped
     """
     def startDayEvent(self):
         result = True
+        totalResult = True
 
-        return result
+        ec2Map = self.findServices(running=False)  # Find all those that are currently stopped
+
+        if len(ec2Map) == 0:
+            self.logger.info(
+                "There are currently no stopped EC2 instances that are tagged - they are either running or dont exist")
+            return True
+        try:
+
+            for ec2instance in ec2Map:
+                ec2Dict = ec2Map[ec2instance]
+                state = ec2Dict["state"]
+                platform = ec2Dict["platform"]
+                name = ec2Dict["name"]
+                if state=="stopped":
+                    response  = self.client.start_instances(
+                        InstanceIds = [ec2instance]
+                    )
+                    cs =  response['StartingInstances'][0]['CurrentState']['Name']
+                    self.logger.info(f"Starting up  instance {name} id {ec2instance}, plaform {platform} moving from stopped --> {cs}")
+                    result = ("pending" == cs)
+                    if not result:
+                        totalResult = False
+        except Exception as e:
+            self.logger.error("Could not start all EC2 instances ")
+            self.logger.exception(e)
+            totalResult = False
+
+        return totalResult
 
     """
     Checks the SERVICE ARN for the special searchTag - and see if the Tag is set to TRUE
@@ -71,9 +123,10 @@ class ec2Contoller:
         return False
     """
     Finds all Ec2 instances that exist with a dev day tag
-    Returns a MAP of [instance id] : {state , platform etc}
+    if the running parameter is set to True only instances that are currently running will be picked up, passing False will flag all those that are stopped
+    Returns a MAP of [instance id] : {state , platform , name}
     """
-    def findServices(self):
+    def findServices(self, running=True):
 
         serviceMap = {}
         response = self.client.describe_instances()
@@ -90,11 +143,21 @@ class ec2Contoller:
                     platform = ins.get("Platform","Linux")
                     state = ins["State"]['Name']
                     tags = ins.get('Tags',[])
+                    name = '(no name)'
+                    for tag in tags:
+                        k = tag['Key']
+                        if k.lower() =='name':
+                            name = tag['Value']
+                            break
+
                     if self._checkforTag(tags):
-                        self.logger.info(f"EC2: instance-id {instanceId} - platform {platform}, current state {state} is tagged for Developer day/night")
-                        serviceMap[instanceId] = {"state" : state, "platform" : platform}
+                        self.logger.info(f"EC2: {name} instance-id {instanceId} - platform {platform}, current state {state} is tagged for Developer day/night")
+                        if (running and state=="running") or (not running and state=="stopped"):
+                            serviceMap[instanceId] = {"state" : state, "platform" : platform, "name": name}
+                        else:
+                            self.logger.info(f"EC2: skipping  instance_id {instanceId} {name} as it is already in the desired state")
                     else:
-                        self.logger.info(f"EC2: skipping untagged instance_id {instanceId}")
+                        self.logger.info(f"EC2: skipping untagged instance_id {instanceId} {name}")
 
 
             if nextToken is not None:

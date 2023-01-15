@@ -57,9 +57,13 @@ def lambda_handler(event, context):
         for crType in controlledResources:
             arnList = controlledResources[crType]
             for arn in arnList:
-                logger.info(f"Resource Type {crType} - ARN {arn}")
+                if crType=="EC2":
+                    details  = arnList[arn]
+                    logger.info(f"Resource Type {crType} - details {details}")
+                else:
+                    logger.info(f"Resource Type {crType} - ARN {arn}")
 
     return {
         'statusCode': 200,
-        'body': json.dumps('Hello from Lambda!')
+        'body': json.dumps('All ok')
     }

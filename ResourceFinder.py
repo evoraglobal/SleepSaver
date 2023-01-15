@@ -1,7 +1,8 @@
 import logging
 import os
 import boto3
-from ecsController import ecsContoller
+from ecsController import ecsController
+from ec2Controller import ec2Controller
 
 
 
@@ -29,9 +30,12 @@ class ResourceFinder:
     def findResourcesFor(self, region):
         allRecources={}
 
-        ecs = ecsContoller(region, self.searchTag)
+        ecs = ecsController(region, self.searchTag)
 
         allRecources[ResourceFinder.ECS]= ecs.findResourcesForECS()
+
+        ec2 = ec2Controller(region, self.searchTag)
+        allRecources[ResourceFinder.EC2] = ec2.findResourcesForEC2()
 
         return allRecources
 
@@ -40,21 +44,38 @@ class ResourceFinder:
     """
     def startResources(self, region):
 
-        ecs = ecsContoller(region, self.searchTag)
+        ecs = ecsController(region, self.searchTag)
         allok= ecs.startDayEvent()
         if allok:
             self.logger.info("****All ECS Started ok****")
         else:
             self.logger.warning("###### Not All the ECS Started OK #######")
 
+        ec2 = ec2Controller(region, self.searchTag)
+        allok = ec2.startDayEvent()
+        if allok:
+            self.logger.info("****All EC2 Started ok****")
+        else:
+            self.logger.warning("###### Not All the EC2 Started OK #######")
+
+
+
     """
     Stops all the resources which has  the search tag
     """
     def stopResources(self, region):
-        ecs = ecsContoller(region, self.searchTag)
+        ecs = ecsController(region, self.searchTag)
         allok = ecs.stopDayEvent()
         if allok:
             self.logger.info("****All ECS Stopped ok****")
         else:
             self.logger.warning("###### Not All the ECS Stopped OK #######")
+
+        ec2 = ec2Controller(region, self.searchTag)
+        allok = ec2.stopDayEvent()
+        if allok:
+            self.logger.info("****All EC2 Stopped ok****")
+        else:
+            self.logger.warning("###### Not All the EC2 Stopped OK #######")
+
 
