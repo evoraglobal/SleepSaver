@@ -17,7 +17,7 @@ class ecsController:
         self.logger = logging.getLogger(__name__)
         self.enabledServices = {}
         env = os.environ
-        self.ecsTable = env.get(DBTABLEENV, "ecsState")
+        self.ecsTable = env.get(DBTABLEENV, "ecsStatev2")
         self.dbregion = env.get(DBREGION, "eu-west-2")
 
     """
