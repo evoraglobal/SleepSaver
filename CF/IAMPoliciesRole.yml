@@ -53,8 +53,14 @@ Resources:
               - 'dynamodb:DeleteItem'
               - 'dynamodb:Scan'
             Resource:
-              - 'arn:aws:dynamodb:eu-west-2:307494535005:table/asgState'
-              - 'arn:aws:dynamodb:eu-west-2:307494535005:table/ecsStatev2'
+              - !Sub
+                - 'arn:aws:dynamodb:${REG}:${ACC}:table/asgState'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
+              - !Sub
+                - 'arn:aws:dynamodb:${REG}:${ACC}:table/ecsStatev2'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
       Roles:
         - !Ref IAMRSLEEPLAMSRVC
     Metadata:
@@ -92,15 +98,18 @@ Resources:
             Action: 'logs:CreateLogGroup'
             Resource:
               - !Sub
-                - 'arn:aws:logs:eu-west-2:${ACC}:*'
+                - 'arn:aws:logs:${REG}:${ACC}:*'
                 - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
           - Effect: Allow
             Action:
               - 'logs:CreateLogStream'
               - 'logs:PutLogEvents'
             Resource:
-              - >-
-                arn:aws:logs:eu-west-2:307494535005:log-group:/aws/lambda/sleepsaver:*
+              - !Sub
+                - 'arn:aws:logs:${REG}:${ACC}:log-group:/aws/lambda/sleepsaver:*'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
       Roles:
         - !Ref IAMRSLEEPLAMSRVC
     Metadata:

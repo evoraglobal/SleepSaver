@@ -17,9 +17,6 @@ class asgController:
         self.searchTag = searchTag.lower()
         self.logger = logging.getLogger(__name__)
         self.enabledServices = {}
-        env = os.environ
-        self.ecsTable = env.get(DBTABLEENV, "ecsState")
-        self.dbregion = env.get(DBREGION, "eu-west-2")
 
     """
         Checks The tags for the DevDay search tag
@@ -44,22 +41,26 @@ class asgController:
     """
     def findResourcesForASG(self, running=False):
         asgMap = {}
-        response = self.client.describe_auto_scaling_groups()
-        asgList = response.get("AutoScalingGroups",[])
-        for asg in asgList:
-            asgName = asg["AutoScalingGroupName"]
-            minSize = asg["MinSize"]
-            maxSize = asg["MaxSize"]
-            desiredSize = asg["DesiredCapacity"]
-            tags = asg.get("Tags",[])
-            if self._checkforTag(tags):
-                if running and desiredSize>0 or not running:
-                    self.logger.info(f"Adding tagged ASG {asgName}")
-                    asgMap[asgName]={"minSize" : minSize,
-                                     "desiredSize" : desiredSize,
-                                     "maxSize" : maxSize}
-            else:
-                self.logger.info(f"Skipping untagged ASG {asgName}")
+        try:
+            response = self.client.describe_auto_scaling_groups()
+            asgList = response.get("AutoScalingGroups",[])
+            for asg in asgList:
+                asgName = asg["AutoScalingGroupName"]
+                minSize = int(asg["MinSize"])
+                maxSize = int(asg["MaxSize"])
+                desiredSize = int(asg["DesiredCapacity"])
+                tags = asg.get("Tags",[])
+                if self._checkforTag(tags):
+                    if running and desiredSize>0 or not running:
+                        self.logger.info(f"Adding tagged ASG {asgName}")
+                        asgMap[asgName]={"minSize" : minSize,
+                                         "desiredSize" : desiredSize,
+                                         "maxSize" : maxSize}
+                else:
+                    self.logger.info(f"Skipping untagged ASG {asgName}")
+        except Exception as e:
+            self.logger.warning(f"Could not access ASG in resources in {self.region}")
+
         return asgMap
 
     """
@@ -73,6 +74,10 @@ class asgController:
         totalResult = True
 
         asgMap = self.findResourcesForASG(running=True)  # Find all those that are currently running
+
+        # Loads whats currently in the database and clear it out
+        oldMap = self._loadState()
+        self._deleteState(oldMap)
 
         if len(asgMap) == 0:
             self.logger.info(
@@ -91,7 +96,44 @@ class asgController:
         return totalResult
 
     """
+       Main entry point to signal a START of developer day event
+       Loads previously stored state from the database and if the ASG still exists - it restores it
+       """
+
+    def startDayEvent(self):
+        result = True
+        totalResult = True
+
+        asgMap = self.findResourcesForASG(running=False)  # Find all those that are currently stopped
+
+        if len(asgMap) == 0:
+            self.logger.info(
+                "There are currently no ASG that are tagged - they are either running or dont exist")
+            return True
+
+        loadedMap = self._loadState()
+        if len(loadedMap) ==0:
+            self.logger.warning(f"The ASG State is no longer in the database table {self.asgTable} - so the ASG can not be reactivated")
+            return False
+
+        for asg in asgMap:
+            max = asgMap[asg]["maxSize"]
+            if asg in loadedMap:
+                dimensions = loadedMap[asg]
+                if max==0:
+                    self.logger.info(f"Waking up ASG - with the following dimensions {dimensions}")
+                    result = self._setCapacity(asg,dimensions["minSize"], dimensions["desiredSize"], dimensions["maxSize"])
+                    if not result:
+                        totalResult = False
+            else:
+                self.logger.warning(f"The ASG {asg} was not found in the database {self.asgTable}")
+        return totalResult
+
+
+
+    """
     Set the capacity limits on a given ASG
+    returns boolean - based on success
     """
     def _setCapacity(self,asgName, min ,desired, max):
         if min > desired:
@@ -116,7 +158,7 @@ class asgController:
 
     """"
     Writes the ASG instance dimensions desired state into the dynamoDB table.
-    expects a MAP of clusters --- [ [Service Arns, service Name, desired state]]
+    expects a a MAP[asgName] = {minSize: x, desiredSize, y , maxSize z}
     returns True if was all stored ok
     """
     def _storeState(self, asgMap):
@@ -133,7 +175,7 @@ class asgController:
                 min = dimensions["minSize"]
                 max = dimensions["maxSize"]
                 desired = dimensions["desiredSize"]
-                self.logger.info(f"fStoring current capacity state for {asg} min {min}, desired {desired}, Max {max}")
+                self.logger.info(f"Storing current capacity state for {asg} min {min}, desired {desired}, Max {max}")
 
                 response = client.put_item(
                     TableName=self.asgTable,
@@ -150,3 +192,62 @@ class asgController:
             return False
 
         return True
+
+    """
+       Loads the stored state relating to ASGs --> Service desired count numbers 
+       Returns:    a MAP[asgName] = {minSize: x, desiredSize, y , maxSize z}
+       """
+
+    def _loadState(self):
+        client = boto3.client('dynamodb', region_name=self.dbregion)
+        response = client.scan(
+            TableName=self.asgTable,
+            AttributesToGet=[
+                'asgName', 'region', 'min', 'max', 'desired'
+            ],
+            Limit=999)
+        items = response.get("Items", [])
+        asgMap = {}
+        for item in items:
+            region = item['region']['S']
+            asgName = item["asgName"]['S']
+            min = int(item["min"]['N'])
+            max = int(item["max"]['N'])
+            desired =int( item["desired"]['N'])
+
+            if region == self.region:
+
+                self.logger.info(
+                    f"restoring state: ASG  Name: {asgName}, capacity min {min }, desired {desired}, max {max}")
+
+                asgMap[asgName] = {"minSize": min,
+                                   "desiredSize": desired,
+                                   "maxSize": max}
+
+
+            else:
+                self.logger.info(f"loading data Ignoring region {region} ")
+
+        return asgMap
+
+    """
+       Delete all records passed from the database  for a given record
+       expects a MAP[asgName] = {minSize: x, desiredSize, y , maxSize z}
+       """
+
+    """
+    Deletes the ASG Maps in the database 
+    """
+    def _deleteState(self, asgMap):
+
+        client = boto3.client('dynamodb', region_name=self.dbregion)
+
+        for asg in asgMap:
+
+                self.logger.info(f"Clearing out DB Records from the Table {self.asgTable}  -> {asg}")
+                response = client.delete_item(
+                    TableName=self.asgTable,
+                    Key={
+                        'asgName': {'S': asg},
+                        'region': {'S': self.region}
+                    })

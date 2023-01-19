@@ -2,6 +2,7 @@ import json
 import os
 import logging
 from ResourceFinder import ResourceFinder
+import boto3
 
 
 env = os.environ
@@ -18,9 +19,7 @@ consoleHandler.setLevel(logging.INFO)
 consoleHandler.setFormatter(formatter)
 logger.addHandler(consoleHandler)
 
-# Comma separated list of regions to monitor
-regionstr = env.get(REGIONLISTENV, "eu-west-2,eu-west-1")
-regionlist = regionstr.split(',')
+
 
 SEARCHTAG = "DEVDAYTERM"
 
@@ -29,8 +28,36 @@ STOP = "STOP"
 
 EVENTLIST = [ START , STOP]
 
+def getRegions():
+    # find the valid regions
+    lregionlist = []
+
+    ec2 = boto3.client("ec2", "eu-west-2")
+    response = ec2.describe_regions(AllRegions=False, Filters=[{
+        "Name": "opt-in-status",
+        "Values": ["opt-in-not-required", "opted-in"]
+    }])
+    regionlong = response['Regions']
+    for region in regionlong:
+        regionName = region['RegionName']
+        lregionlist.append(regionName)
+    return lregionlist
+
+
+
 
 searchTerm = env.get(SEARCHTAG, "DEVDAY")
+specifiedRegions = env.get(REGIONLISTENV,None)
+
+
+# check to see if the precise regions have been specified - if not set then all regions will be processed
+
+if specifiedRegions is None:
+    regionlist = getRegions()
+else:
+    regionlist = specifiedRegions.split(',')
+
+
 
 def lambda_handler(event, context):
 
@@ -43,21 +70,25 @@ def lambda_handler(event, context):
         }
 
 
+    logger.info(f"Available regions are {regionlist}")
+
     rf = ResourceFinder(searchTerm)
+
+
     for region in regionlist:
         region = region.strip()
-        logger.info(f"-----Searching for resources {region}-----------")
+        logger.info(f"-----Searching for resources in region: {region} -----------")
         controlledResources = rf.findResourcesFor(region)
         if ev == START:
             rf.startResources(region)
         else:
             rf.stopResources(region)
 
-        logger.info(f">>>>>>> Finished {ev} Operation For Following Resources<<<<<<<<")
+        logger.info(f">>>>>>> Finished {ev} Operation For Following Resources for region {region}<<<<<<<<")
         for crType in controlledResources:
             arnList = controlledResources[crType]
             for arn in arnList:
-                if crType=="EC2":
+                if crType in ["EC2", "ASG"]:
                     details  = arnList[arn]
                     logger.info(f"Resource Type {crType} - details {details}")
                 else:

@@ -3,6 +3,7 @@ import os
 import boto3
 from ecsController import ecsController
 from ec2Controller import ec2Controller
+from asgController import asgController
 
 
 
@@ -16,10 +17,12 @@ class ResourceFinder:
     ECS = "ECS"
     EC2 = "EC2"
     RDS = "RDS"
+    ASG  = "ASG"
 
     def __init__(self,searchTermTag):
         self.logger =logging.getLogger(__name__)
         self.searchTag = searchTermTag
+
 
 
 
@@ -32,10 +35,15 @@ class ResourceFinder:
 
         ecs = ecsController(region, self.searchTag)
 
+
         allRecources[ResourceFinder.ECS]= ecs.findResourcesForECS()
 
         ec2 = ec2Controller(region, self.searchTag)
         allRecources[ResourceFinder.EC2] = ec2.findResourcesForEC2()
+
+        asg  = asgController(region, self.searchTag)
+        allRecources[ResourceFinder.ASG] = asg.findResourcesForASG()
+
 
         return allRecources
 
@@ -47,16 +55,24 @@ class ResourceFinder:
         ecs = ecsController(region, self.searchTag)
         allok= ecs.startDayEvent()
         if allok:
-            self.logger.info("****All ECS Started ok****")
+            self.logger.info(f"****All ECS Started ok for region {region} ****")
         else:
-            self.logger.warning("###### Not All the ECS Started OK #######")
+            self.logger.warning(f"###### Not All the ECS Started OK for region {region} #######")
 
         ec2 = ec2Controller(region, self.searchTag)
         allok = ec2.startDayEvent()
         if allok:
-            self.logger.info("****All EC2 Started ok****")
+            self.logger.info(f"****All EC2 Started ok**** for region {region}")
         else:
-            self.logger.warning("###### Not All the EC2 Started OK #######")
+            self.logger.warning(f"###### Not All the EC2 Started OK for region {region }#######")
+
+
+        asg = asgController(region, self.searchTag )
+        allok = asg.startDayEvent()
+        if allok:
+            self.logger.info(f"****All ASG Started ok**** for region {region}")
+        else:
+            self.logger.warning(f"###### Not All the ASG Started OK for region {region}#######")
 
 
 
@@ -77,5 +93,13 @@ class ResourceFinder:
             self.logger.info("****All EC2 Stopped ok****")
         else:
             self.logger.warning("###### Not All the EC2 Stopped OK #######")
+
+        asg = asgController(region, self.searchTag)
+        allok = asg.stopDayEvent()
+        if allok:
+            self.logger.info(f"****All ASG Stopped ok**** for region {region}")
+        else:
+            self.logger.warning(f"###### Not All the ASG Stopped OK for region {region} #######")
+
 
 

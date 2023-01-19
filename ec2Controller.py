@@ -22,6 +22,7 @@ class ec2Controller:
         env = os.environ
 
 
+
     """
     Main entry point to be called from ResourceFinder - finds all EC2 Services that have been tagged
     Returns a  Map [instance id] : {state , platform , name}
@@ -129,39 +130,43 @@ class ec2Controller:
     def findServices(self, running=True):
 
         serviceMap = {}
-        response = self.client.describe_instances()
-        nextToken = "A"
-        while nextToken is not None:
+        try:
+            response = self.client.describe_instances()
+            nextToken = "A"
+            while nextToken is not None:
 
-            nextToken = response.get("NextToken")
-            reservationL = response.get("Reservations",[])
-            for reservation in reservationL:
-                instanceL = reservation.get("Instances",[])
-                for ins in instanceL:
-                    self.logger.debug(f"Instance Details: {ins} ")
-                    instanceId = ins["InstanceId"]
-                    platform = ins.get("Platform","Linux")
-                    state = ins["State"]['Name']
-                    tags = ins.get('Tags',[])
-                    name = '(no name)'
-                    for tag in tags:
-                        k = tag['Key']
-                        if k.lower() =='name':
-                            name = tag['Value']
-                            break
+                nextToken = response.get("NextToken")
+                reservationL = response.get("Reservations",[])
+                for reservation in reservationL:
+                    instanceL = reservation.get("Instances",[])
+                    for ins in instanceL:
+                        self.logger.debug(f"Instance Details: {ins} ")
+                        instanceId = ins["InstanceId"]
+                        platform = ins.get("Platform","Linux")
+                        state = ins["State"]['Name']
+                        tags = ins.get('Tags',[])
+                        name = '(no name)'
+                        for tag in tags:
+                            k = tag['Key']
+                            if k.lower() =='name':
+                                name = tag['Value']
+                                break
 
-                    if self._checkforTag(tags):
-                        self.logger.info(f"EC2: {name} instance-id {instanceId} - platform {platform}, current state {state} is tagged for Developer day/night")
-                        if (running and state=="running") or (not running and state=="stopped"):
-                            serviceMap[instanceId] = {"state" : state, "platform" : platform, "name": name}
+                        if self._checkforTag(tags):
+                            self.logger.info(f"EC2: {name} instance-id {instanceId} - platform {platform}, current state {state} is tagged for Developer day/night")
+                            if (running and state=="running") or (not running and state=="stopped"):
+                                serviceMap[instanceId] = {"state" : state, "platform" : platform, "name": name}
+                            else:
+                                self.logger.info(f"EC2: skipping  instance_id {instanceId} {name} as it is already in the desired state")
                         else:
-                            self.logger.info(f"EC2: skipping  instance_id {instanceId} {name} as it is already in the desired state")
-                    else:
-                        self.logger.info(f"EC2: skipping untagged instance_id {instanceId} {name}")
+                            self.logger.info(f"EC2: skipping untagged instance_id {instanceId} {name}")
 
 
-            if nextToken is not None:
-                response = self.client.describe_instances(NextToken=nextToken)
+                if nextToken is not None:
+                    response = self.client.describe_instances(NextToken=nextToken)
+        except Exception as e:
+            self.logger.warning(f"Could not access the instances in the region {self.region}")
+
         return serviceMap
 
 

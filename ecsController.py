@@ -267,17 +267,22 @@ class ecsController:
     """
     def findServices(self):
         clusterList = []
-        response = self.client.list_clusters()
-        nextToken = "A"
-        # iterate through the clusters with pagination - just incase there are many
-        while nextToken is not None:
-            nextToken = response.get(nextToken)
-            self.logger.debug(f"cluster reponse> {response}")
-            cl = response.get('clusterArns',[])
-            clusterList = clusterList + cl
+        try:
+            response = self.client.list_clusters()
+            nextToken = "A"
+            # iterate through the clusters with pagination - just incase there are many
+            while nextToken is not None:
+                nextToken = response.get(nextToken)
+                self.logger.debug(f"cluster reponse> {response}")
+                cl = response.get('clusterArns',[])
+                clusterList = clusterList + cl
 
-            if nextToken is not None:
-                response = self.client.list_clusters(nextToken=nextToken)
+                if nextToken is not None:
+                    response = self.client.list_clusters(nextToken=nextToken)
+        except Exception as e:
+            self.logger.warning(f"could not access the clusters for region {self.region}")
+            self.enabledServices={}
+            return self.enabledServices
 
         # for each cluster get the list of the services
         for cluster in clusterList:

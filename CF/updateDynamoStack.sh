@@ -1,2 +1,2 @@
 aws s3 sync . s3://evg-sleepsaver-cf --region eu-west-2
-aws cloudformation update-stack --stack-name sleepSaverSetup --template-url https://evg-sleepsaver-cf.s3.eu-west-2.amazonaws.com/dynamoDBCF.yml --region eu-west-2
+aws cloudformation create-stack --stack-name sleepSaverSetup --template-url https://evg-sleepsaver-cf.s3.eu-west-2.amazonaws.com/dynamoDBCF.yml --region eu-west-2
