@@ -1,0 +1,1 @@
+aws iam get-policy-version --policy-arn arn:aws:iam::307494535005:policy/ecsReaderWriter --version-id v2

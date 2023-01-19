@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    8ce2d05e-aa87-4ef0-8f33-bfd22ecbc207:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 170
+        'y': 220
+      z: 0
+      embeds: []
+      dependson:
+        - a0e598b9-856a-4dcb-b715-f9fe0ed0ab9f
+    a0e598b9-856a-4dcb-b715-f9fe0ed0ab9f:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 300
+        'y': 140
+      z: 0
+      embeds: []
+    478df7a2-24c7-4f33-9cd0-701ecaeb9b82:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 89.66920339917384
+        'y': 231.4614713366727
+      z: 0
+      embeds: []
+      isassociatedwith:
+        - a0e598b9-856a-4dcb-b715-f9fe0ed0ab9f
+    783436e9-93dd-4f15-b38d-ecb517306b31:
+      source:
+        id: 478df7a2-24c7-4f33-9cd0-701ecaeb9b82
+      target:
+        id: a0e598b9-856a-4dcb-b715-f9fe0ed0ab9f
+      z: 11
+Resources:
+  IAMPDYN:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: SLEEPECSDYNRW
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - 'dynamodb:PutItem'
+              - 'dynamodb:DeleteItem'
+              - 'dynamodb:Scan'
+            Resource:
+              - 'arn:aws:dynamodb:eu-west-2:307494535005:table/asgState'
+              - 'arn:aws:dynamodb:eu-west-2:307494535005:table/ecsStatev2'
+      Roles:
+        - !Ref IAMRSLEEPLAMSRVC
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 8ce2d05e-aa87-4ef0-8f33-bfd22ecbc207
+    DependsOn:
+      - IAMRSLEEPLAMSRVC
+  IAMRSLEEPLAMSRVC:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: sleepSaver-Lambda-execution-role
+      Description: Sleepsaver exeuction role
+      MaxSessionDuration: 4600
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonECS_FullAccess'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: 'sts:AssumeRole'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: a0e598b9-856a-4dcb-b715-f9fe0ed0ab9f
+  IAMPLamEX:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: AWSLambdaBasicExecutionRole-Sleepsaver
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action: 'logs:CreateLogGroup'
+            Resource: 'arn:aws:logs:eu-west-2:307494535005:*'
+          - Effect: Allow
+            Action:
+              - 'logs:CreateLogStream'
+              - 'logs:PutLogEvents'
+            Resource:
+              - >-
+                arn:aws:logs:eu-west-2:307494535005:log-group:/aws/lambda/sleepsaver:*
+      Roles:
+        - !Ref IAMRSLEEPLAMSRVC
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 478df7a2-24c7-4f33-9cd0-701ecaeb9b82
