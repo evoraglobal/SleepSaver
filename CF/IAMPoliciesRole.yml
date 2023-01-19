@@ -90,7 +90,10 @@ Resources:
         Statement:
           - Effect: Allow
             Action: 'logs:CreateLogGroup'
-            Resource: 'arn:aws:logs:eu-west-2:307494535005:*'
+            Resource:
+              - !Sub
+                - 'arn:aws:logs:eu-west-2:${ACC}:*'
+                - ACC: !Ref "AWS::AccountId"
           - Effect: Allow
             Action:
               - 'logs:CreateLogStream'
