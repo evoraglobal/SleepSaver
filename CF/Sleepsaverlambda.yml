@@ -38,7 +38,45 @@ Metadata:
       target:
         id: a0e598b9-856a-4dcb-b715-f9fe0ed0ab9f
       z: 11
+Parameters:
+  LambdaName:
+    Default: SleepSaverProd
+    Type: String
+  LambdaDescription:
+    Default: 'Lambda that will look for the Tag DEVDAY : TRUE and will put common assets to sleep at the end of the day, and will start them on next day'
+    Type: String
+  DayScheduleExpression:
+    Default: 'cron(0 4 ? * 2-6 *)'
+    Type: String
+  NightScheduleExpression:
+    Default: 'cron(45 18 * * ? *)'
+    Type: String
+
 Resources:
+  #Edit 3 S3Key for the zip containing lambda code
+  LambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Ref LambdaName
+      Role:  !GetAtt IAMRSLEEPLAMSRVC.Arn
+      Runtime: python3.9
+      Handler: lambda_function.lambda_handler
+      Description: !Ref LambdaDescription
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          ECSDBREGION: eu-west-2
+          ECSDYNTABLE: ecsStatev2
+          REGIONLIST: 'eu-west-1, eu-west-2'
+          SEARCHTAG: DEVDAY
+          ASGDYNTABLE: asgState
+          ASGREGION: eu-west-2
+      Code:
+        S3Bucket: 'evg-sleepsaver-cf'
+        S3Key: 'sleepsaverlambda.zip'
+    DependsOn:
+      - IAMPDYN
   IAMPDYN:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -68,11 +106,42 @@ Resources:
         id: 8ce2d05e-aa87-4ef0-8f33-bfd22ecbc207
     DependsOn:
       - IAMRSLEEPLAMSRVC
+  NightRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: SleepSaverNighRule
+      Description: sleepsaverProd Start of Night Schedule
+      ScheduleExpression: !Ref NightScheduleExpression
+      Targets:
+        - Id: !Ref LambdaName
+          Arn: !GetAtt LambdaFunction.Arn
+          Input: '{ "event": "STOP"}'
+      State: ENABLED
+  DayRule:
+    Type: 'AWS::Events::Rule'
+    Properties:
+      Name: SleepSaverDayRule
+      Description: sleepsaverProd Start of Day Schedule
+      ScheduleExpression: !Ref DayScheduleExpression
+      Targets:
+        - Id: !Ref LambdaName
+          Arn: !GetAtt LambdaFunction.Arn
+          Input: '{ "event": "START"}'
+      State: ENABLED
+  InvokeLambdaRule:
+    Type: 'AWS::Lambda::Permission'
+    Properties:
+      FunctionName: !Ref LambdaName
+      Action: 'lambda:InvokeFunction'
+      Principal: events.amazonaws.com
+    DependsOn: LambdaFunction
+
+
   IAMRSLEEPLAMSRVC:
     Type: 'AWS::IAM::Role'
     Properties:
       RoleName: sleepSaver-Lambda-execution-role
-      Description: Sleepsaver exeuction role
+      Description: 'Sleepsaver exeuction role'
       MaxSessionDuration: 4600
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'

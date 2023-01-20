@@ -3,8 +3,8 @@ import boto3
 import logging
 import os
 
-DBTABLEENV = "ELBDYNTABLE"
-DBREGION = "ELBREGION"
+DBTABLEENV = "ASGDYNTABLE"
+DBREGION = "ASGREGION"
 
 class asgController:
 
