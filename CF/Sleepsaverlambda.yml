@@ -146,6 +146,7 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
         - 'arn:aws:iam::aws:policy/AmazonECS_FullAccess'
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -153,34 +154,8 @@ Resources:
             Principal:
               Service: lambda.amazonaws.com
             Action: 'sts:AssumeRole'
-    Metadata:
-      'AWS::CloudFormation::Designer':
-        id: a0e598b9-856a-4dcb-b715-f9fe0ed0ab9f
-  IAMPLamEX:
-    Type: 'AWS::IAM::Policy'
-    Properties:
-      PolicyName: AWSLambdaBasicExecutionRole-Sleepsaver
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action: 'logs:CreateLogGroup'
-            Resource:
-              - !Sub
-                - 'arn:aws:logs:${REG}:${ACC}:*'
-                - ACC: !Ref "AWS::AccountId"
-                  REG: !Ref "AWS::Region"
-          - Effect: Allow
-            Action:
-              - 'logs:CreateLogStream'
-              - 'logs:PutLogEvents'
-            Resource:
-              - !Sub
-                - 'arn:aws:logs:${REG}:${ACC}:log-group:/aws/lambda/sleepsaver:*'
-                - ACC: !Ref "AWS::AccountId"
-                  REG: !Ref "AWS::Region"
-      Roles:
-        - !Ref IAMRSLEEPLAMSRVC
+
+
     Metadata:
       'AWS::CloudFormation::Designer':
         id: 478df7a2-24c7-4f33-9cd0-701ecaeb9b82

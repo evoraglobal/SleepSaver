@@ -2,9 +2,12 @@
 import boto3
 import logging
 import os
+from elb import elb
 
 DBTABLEENV = "ASGDYNTABLE"
 DBREGION = "ASGREGION"
+
+ENVTAGNAME = "elasticbeanstalk:environment-id"
 
 class asgController:
 
@@ -17,6 +20,7 @@ class asgController:
         self.searchTag = searchTag.lower()
         self.logger = logging.getLogger(__name__)
         self.enabledServices = {}
+        self.elbins = elb(searchTag,region)
 
     """
         Checks The tags for the DevDay search tag
@@ -27,9 +31,12 @@ class asgController:
 
         for tag in tagList:
             key = tag['Key']
-            value = tag['Value'].lower()
-            if key.lower() == self.searchTag and value == 'true':
+            value = tag['Value']
+            if key.lower() == self.searchTag and value.lower() == 'true':
                 return True
+            # check to see if this an elastic beanstalk controlled ASG
+            if key == ENVTAGNAME:
+                return self.elbins.isEnvironmentTagged(value)
 
         return False
 
