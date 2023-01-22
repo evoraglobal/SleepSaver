@@ -4,6 +4,7 @@ import boto3
 from ecsController import ecsController
 from ec2Controller import ec2Controller
 from asgController import asgController
+from rdsController import rdsController
 
 
 
@@ -44,6 +45,9 @@ class ResourceFinder:
         asg  = asgController(region, self.searchTag)
         allRecources[ResourceFinder.ASG] = asg.findResourcesForASG()
 
+        rds = rdsController(region, self.searchTag)
+        allRecources[ResourceFinder.RDS] = rds.findResourcesForRDS(True)
+
 
         return allRecources
 
@@ -74,6 +78,12 @@ class ResourceFinder:
         else:
             self.logger.warning(f"###### Not All the ASG Started OK for region {region}#######")
 
+        rds = rdsController(region, self.searchTag)
+        allok = rds.startDayEvent()
+        if allok:
+            self.logger.info(f"****All RDS Started ok**** for region {region}")
+        else:
+            self.logger.warning(f"###### Not All the RDS Started OK for region {region}#######")
 
 
     """
@@ -100,6 +110,14 @@ class ResourceFinder:
             self.logger.info(f"****All ASG Stopped ok**** for region {region}")
         else:
             self.logger.warning(f"###### Not All the ASG Stopped OK for region {region} #######")
+
+
+        rds = rdsController(region, self.searchTag)
+        allok = rds.stopDayEvent()
+        if allok:
+            self.logger.info(f"****All RDS Stopped ok**** for region {region}")
+        else:
+            self.logger.warning(f"###### Not All the RDS Stopped OK for region {region}#######")
 
 
 

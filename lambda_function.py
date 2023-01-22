@@ -78,21 +78,13 @@ def lambda_handler(event, context):
     for region in regionlist:
         region = region.strip()
         logger.info(f"-----Searching for resources in region: {region} -----------")
-        controlledResources = rf.findResourcesFor(region)
+
         if ev == START:
             rf.startResources(region)
         else:
             rf.stopResources(region)
 
         logger.info(f">>>>>>> Finished {ev} Operation For Following Resources for region {region}<<<<<<<<")
-        for crType in controlledResources:
-            arnList = controlledResources[crType]
-            for arn in arnList:
-                if crType in ["EC2", "ASG"]:
-                    details  = arnList[arn]
-                    logger.info(f"Resource Type {crType} - details {details}")
-                else:
-                    logger.info(f"Resource Type {crType} - ARN {arn}")
 
     return {
         'statusCode': 200,
