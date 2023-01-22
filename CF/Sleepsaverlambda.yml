@@ -146,6 +146,7 @@ Resources:
       ManagedPolicyArns:
         - 'arn:aws:iam::aws:policy/AmazonEC2FullAccess'
         - 'arn:aws:iam::aws:policy/AmazonECS_FullAccess'
+        - 'arn:aws:iam::aws:policy/AmazonRDSFullAccess'
         - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
       AssumeRolePolicyDocument:
         Version: 2012-10-17
