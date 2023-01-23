@@ -72,6 +72,8 @@ def lambda_handler(event, context):
 
     logger.info(f"Available regions are {regionlist}")
 
+    logger.info(f">>>>>>>>> BOTO RUNNING VERSION {boto3.__version__ }<<<<<<<<")
+
     rf = ResourceFinder(searchTerm)
 
 
