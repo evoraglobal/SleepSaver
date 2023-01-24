@@ -79,14 +79,18 @@ def lambda_handler(event, context):
 
     for region in regionlist:
         region = region.strip()
-        logger.info(f"-----Searching for resources in region: {region} -----------")
+        try:
+            logger.info(f"-----Searching for resources in region: {region} -----------")
 
-        if ev == START:
-            rf.startResources(region)
-        else:
-            rf.stopResources(region)
+            if ev == START:
+                rf.startResources(region)
+            else:
+                rf.stopResources(region)
 
-        logger.info(f">>>>>>> Finished {ev} Operation For Following Resources for region {region}<<<<<<<<")
+            logger.info(f">>>>>>> Finished {ev} Operation For Following Resources for region {region}<<<<<<<<")
+        except Exception as e:
+            logger.error(f"Could not access this region  {region} - skipping region")
+            logger.exception(e)
 
     return {
         'statusCode': 200,

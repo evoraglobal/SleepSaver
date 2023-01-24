@@ -3,7 +3,7 @@ FROM public.ecr.aws/lambda/python:latest
 
 # Copy the Python Script to blink LED
 ENV TZ Europe/London
-ENV LAMBDA_TASK_ROOT /LambdaRoot
+ENV LAMBDA_TASK_ROOT /LambdaRoot/
 
 RUN mkdir ${LAMBDA_TASK_ROOT}
 
