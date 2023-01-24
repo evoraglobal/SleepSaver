@@ -33,7 +33,7 @@ class elb:
         client = self.session.client('elasticbeanstalk')
         response = client.describe_environments()
         nextToken='A'
-        self.logger.info(f"^^^^^ ELASTIC RESPONSE {response} ")
+        self.logger.debug(f"^^^^^ ELASTIC RESPONSE {response} ")
         while  nextToken is not None:
             nextToken = response.get('NextToken',None)
             envList = response.get('Environments', [])
