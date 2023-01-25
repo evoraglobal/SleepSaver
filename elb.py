@@ -30,7 +30,7 @@ class elb:
         self.searchKey = searchKey.lower()
         self.taggedEnvironmentIDList = []
         self.session = boto3.session.Session(region_name=region)
-        client = self.session.clsoient('elasticbeanstalk')
+        client = self.session.client('elasticbeanstalk')
         response = client.describe_environments()
         nextToken='A'
         self.logger.debug(f"^^^^^ ELASTIC RESPONSE {response} ")
