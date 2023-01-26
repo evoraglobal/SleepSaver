@@ -53,6 +53,47 @@ Parameters:
     Type: String
 
 Resources:
+  DDBT1TDK8:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      AttributeDefinitions:
+        - AttributeName: asgName
+          AttributeType: S
+        - AttributeName: region
+          AttributeType: S
+      TableName: asgState
+      KeySchema:
+        - AttributeName: asgName
+          KeyType: HASH
+        - AttributeName: region
+          KeyType: RANGE
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 1f1a32b3-072e-46ef-8815-6451bea883f2
+  DDBT4E67X:
+    Type: 'AWS::DynamoDB::Table'
+    Properties:
+      ProvisionedThroughput:
+        ReadCapacityUnits: 1
+        WriteCapacityUnits: 1
+      AttributeDefinitions:
+        - AttributeName: ecsArn
+          AttributeType: S
+        - AttributeName: region
+          AttributeType: S
+      TableName: ecsStatev2
+      KeySchema:
+        - AttributeName: ecsArn
+          KeyType: HASH
+        - AttributeName: region
+          KeyType: RANGE
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 41c92a16-5756-4f05-8acd-93e3e7d9b78d
+
   #Edit 3 S3Key for the zip containing lambda code
   LambdaFunction:
     Type: AWS::Lambda::Function
@@ -105,7 +146,8 @@ Resources:
       'AWS::CloudFormation::Designer':
         id: 8ce2d05e-aa87-4ef0-8f33-bfd22ecbc207
     DependsOn:
-      - IAMRSLEEPLAMSRVC
+      - DDBT1TDK8
+      - DDBT4E67X
   NightRule:
     Type: 'AWS::Events::Rule'
     Properties:
