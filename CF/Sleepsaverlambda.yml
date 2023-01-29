@@ -46,10 +46,13 @@ Parameters:
     Default: 'Lambda that will look for the Tag DEVDAY : TRUE and will put common assets to sleep at the end of the day, and will start them on next day'
     Type: String
   DayScheduleExpression:
-    Default: 'cron(0 4 ? * 2-6 *)'
+    Default: 'cron(30 2 ? * 2-6 *)'
     Type: String
   NightScheduleExpression:
     Default: 'cron(45 18 * * ? *)'
+    Type: String
+  RegionSearchList:
+    Default: 'eu-west-1, eu-west-2'
     Type: String
 
 Resources:
@@ -109,7 +112,7 @@ Resources:
         Variables:
           ECSDBREGION: eu-west-2
           ECSDYNTABLE: ecsStatev2
-          REGIONLIST: 'eu-west-1, eu-west-2'
+          REGIONLIST: !Ref RegionSearchList
           SEARCHTAG: DEVDAY
           ASGDYNTABLE: asgState
           ASGREGION: eu-west-2
