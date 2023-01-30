@@ -197,7 +197,7 @@ class asgController:
                     TableName=self.asgTable,
                     Item={
                         'asgName': {'S': asg},
-                        'region' : {'S' : self.dbregion},
+                        'region' : {'S' : self.region},
                         'min' : {'N': f'{min}'},
                         'max' : {'N': f'{max}'},
                         'desired' : {'N': f'{desired}'}
