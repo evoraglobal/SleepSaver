@@ -49,22 +49,29 @@ class asgController:
     def findResourcesForASG(self, running=False):
         asgMap = {}
         try:
-            response = self.client.describe_auto_scaling_groups()
-            asgList = response.get("AutoScalingGroups",[])
-            for asg in asgList:
-                asgName = asg["AutoScalingGroupName"]
-                minSize = int(asg["MinSize"])
-                maxSize = int(asg["MaxSize"])
-                desiredSize = int(asg["DesiredCapacity"])
-                tags = asg.get("Tags",[])
-                if self._checkforTag(tags):
-                    if running and desiredSize>0 or not running:
-                        self.logger.info(f"Adding tagged ASG {asgName}")
-                        asgMap[asgName]={"minSize" : minSize,
-                                         "desiredSize" : desiredSize,
-                                         "maxSize" : maxSize}
-                else:
-                    self.logger.info(f"Skipping untagged ASG {asgName}")
+            response = self.client.describe_auto_scaling_groups(MaxRecords=100)
+            nextToken = "A"
+
+            while nextToken is not None:
+                asgList = response.get("AutoScalingGroups", [])
+                for asg in asgList:
+                    asgName = asg["AutoScalingGroupName"]
+                    minSize = int(asg["MinSize"])
+                    maxSize = int(asg["MaxSize"])
+                    desiredSize = int(asg["DesiredCapacity"])
+                    tags = asg.get("Tags",[])
+                    if self._checkforTag(tags):
+                        if running and desiredSize>0 or not running:
+                            self.logger.info(f"Adding tagged ASG {asgName}")
+                            asgMap[asgName]={"minSize" : minSize,
+                                             "desiredSize" : desiredSize,
+                                             "maxSize" : maxSize}
+                    else:
+                        self.logger.info(f"Skipping untagged ASG {asgName}")
+                nexToken = response.get("NextToken", None)
+                if nextToken is not None:
+                    response = self.client.describe_auto_scaling_groups(NextToken=nextToken,MaxRecords=100)
+
         except Exception as e:
             self.logger.warning(f"Could not access ASG in resources in {self.region}")
 
@@ -82,14 +89,16 @@ class asgController:
 
         asgMap = self.findResourcesForASG(running=True)  # Find all those that are currently running
 
-        # Loads whats currently in the database and clear it out
-        oldMap = self._loadState()
-        self._deleteState(oldMap)
 
         if len(asgMap) == 0:
             self.logger.info(
                 "There are currently no active ASG instances that are tagged - they all seemed stopped or do not exist")
             return True
+
+
+        # Loads whats currently in the database and clear it out
+        oldMap = self._loadState()
+        self._deleteState(oldMap)
 
         self._storeState(asgMap)
 
