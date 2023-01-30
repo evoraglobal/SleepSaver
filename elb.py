@@ -48,7 +48,7 @@ class elb:
                     self.logger.info(f"Elastic beanstalk {arn} is NOT tagged, corresponding EID is {envid}")
 
             if nextToken is not None:
-                response = self.client.describe_environments(NextToken=nextToken)
+                response = client.describe_environments(NextToken=nextToken)
         self.logger.info(f"******* Elastic Beanstalk tagged environments {region} *******")
         for eid in self.taggedEnvironmentIDList:
             self.logger.info(f"Elastic EID {eid}")

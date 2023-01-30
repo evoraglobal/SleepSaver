@@ -101,16 +101,17 @@ class ecsController:
         for cluster in serviceArnClusterMap:
             serviceArnList = serviceArnClusterMap[cluster]
             itemCount= len(serviceArnList)
-            if itemCount > 10:
-                self.logger.error(f"wow more than 10 services not yet supported....Truncating")
-                serviceArnList = serviceArnList[0:10]
-            # Check for Clusters that have no enabled services
-            if itemCount > 0:
+            partialList = serviceArnList[0:10]
+            # need to take the ecs list 10 at a time
+            while len(partialList) >0:
+                # remove the current 10 from the list
+                serviceArnList=serviceArnList[10:]
 
                 response = self.client.describe_services(
                                                         cluster=cluster,
-                                                        services=serviceArnList
+                                                        services=partialList
                          )
+                partialList = serviceArnList[0:10]
                 serviceList = response.get("services" ,[])
                 for serviceMap in serviceList:
                     sarn = serviceMap["serviceArn"]
@@ -127,6 +128,8 @@ class ecsController:
                         resultMap[cluster].append([sarn,sname, desiredCount])
                     else:
                         self.logger.warning(f"Service Name {sname} has no task running - so ignoring")
+
+
         return resultMap
 
     """

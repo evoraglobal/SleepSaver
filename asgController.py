@@ -68,12 +68,13 @@ class asgController:
                                              "maxSize" : maxSize}
                     else:
                         self.logger.info(f"Skipping untagged ASG {asgName}")
-                nexToken = response.get("NextToken", None)
+                nextToken = response.get("NextToken", None)
                 if nextToken is not None:
                     response = self.client.describe_auto_scaling_groups(NextToken=nextToken,MaxRecords=100)
 
         except Exception as e:
             self.logger.warning(f"Could not access ASG in resources in {self.region}")
+            self.logger.exception(e)
 
         return asgMap
 

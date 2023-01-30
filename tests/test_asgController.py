@@ -17,21 +17,21 @@ class test_asgController(unittest.TestCase):
         serviceMAp = asg.findResourcesForASG()
         logger.info(f"Enabled ASG:  {serviceMAp}")
 
-
+    """
     def test_stopDay(self):
 
         asg = asgController(REGION, SEARCHTAG)
         logger.info("----------Starting Stop Day Test----------")
         result = asg.stopDayEvent()
         self.assertTrue(result,"Not all ASG could be silenced")
-
     """
+
     def test_startDay(self):
         logger.info("-----------starting Start Day Test--------")
         asg = asgController(REGION, SEARCHTAG)
         result  = asg.startDayEvent()
         self.assertTrue(result, "Not all the ASG could be reactivated")
-    """
+
 
 
 if __name__ == '__main__':
