@@ -1,1 +1,1 @@
-aws lambda invoke  stopreport.txt --function-name SleepSaverProd --payload eyAiZXZlbnQiOiAiU1RBUlQifQ== --region eu-west-2
+aws lambda invoke  startreport.txt --function-name SleepSaverProd --payload eyAiZXZlbnQiOiAiU1RBUlQifQ== --region eu-west-2
