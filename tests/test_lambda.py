@@ -14,7 +14,7 @@ class test_lambda(unittest.TestCase):
         ev  = {"event" : "STOP"}
         lambda_function.lambda_handler(ev,None)
         logger.info("-----Testing Start day event method------")
-        ev  = {"event" : "START"}
+        ev  = {"event" : "START", "DBWARM" : False}
         lambda_function.lambda_handler(ev,None)
 
 

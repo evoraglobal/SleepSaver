@@ -1,0 +1,101 @@
+AWSTemplateFormatVersion: 2010-09-09
+Metadata:
+  'AWS::CloudFormation::Designer':
+    e2841855-4372-41cd-bd48-074a429d0d03:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 190
+        'y': 240
+      z: 1
+      embeds: []
+    08a0de2f-1234-405f-b984-452c7f49113b:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 60
+        'y': 90
+      z: 1
+      embeds: []
+    86cc5a8b-6f47-447b-824e-928dc2cb964d:
+      size:
+        width: 60
+        height: 60
+      position:
+        x: 180
+        'y': 90
+      z: 1
+      embeds: []
+      isassociatedwith:
+        - 08a0de2f-1234-405f-b984-452c7f49113b
+Parameters:
+  LambdaName:
+    Default: SleepSaverProd
+    Type: String
+
+Resources:
+  SLEEPSTEPFN:
+    Type: 'AWS::StepFunctions::StateMachine'
+    Properties:
+      StateMachineName: sleepSaverDelayedAppTierCF
+      RoleArn: 'arn:aws:iam::307494535005:role/sleepSaverStepExec'
+      DefinitionS3Location:
+        Bucket: 'evg-sleepsaver-cf'
+        Key: 'stepsyntax.json'
+    DependsOn: IAMROLESLEEPSTATE
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e2841855-4372-41cd-bd48-074a429d0d03
+
+  IAMROLESLEEPSTATE:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: sleepSaverStepExec
+      Description: >-
+        Sleepsaver execution role for the statemachine to delay application tier
+        start
+      MaxSessionDuration: 4600
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: 'sts:AssumeRole'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 08a0de2f-1234-405f-b984-452c7f49113b
+  IAMPLAMSLEEP:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: sleepSaverInvokeLambda
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+            Resource:
+              - !Sub
+                - 'arn:aws:lambda:${REG}:${ACC}:function:${LAMF}:*'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
+                  LAMF: !Ref LambdaName
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+            Resource:
+              - !Sub
+                - 'arn:aws:lambda:${REG}:${ACC}:function:${LAMF}'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
+                  LAMF: !Ref LambdaName
+      Roles:
+        - !Ref IAMROLESLEEPSTATE
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 86cc5a8b-6f47-447b-824e-928dc2cb964d

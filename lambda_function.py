@@ -25,6 +25,8 @@ SEARCHTAG = "DEVDAYTERM"
 
 START = "START"
 STOP = "STOP"
+DBWARM = "DBWARM"
+
 
 EVENTLIST = [ START , STOP]
 
@@ -61,6 +63,10 @@ else:
 
 def lambda_handler(event, context):
 
+    # only warm up the database resources if this is true
+
+    dbWarm = event[DBWARM] if DBWARM in event else True
+
     ev = event["event"]
     if ev not in EVENTLIST:
         logger.error(f"Unknown Action event: {ev}, was expecting something in {EVENTLIST}")
@@ -83,7 +89,7 @@ def lambda_handler(event, context):
             logger.info(f"-----Searching for resources in region: {region} -----------")
 
             if ev == START:
-                rf.startResources(region)
+                rf.startResources(region,dbWarm)
             else:
                 rf.stopResources(region)
 
