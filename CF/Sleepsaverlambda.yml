@@ -46,7 +46,7 @@ Parameters:
     Default: 'Lambda that will look for the Tag DEVDAY : TRUE and will put common assets to sleep at the end of the day, and will start them on next day'
     Type: String
   DayScheduleExpression:
-    Default: 'cron(30 2 ? * 2-6 *)'
+    Default: 'cron(10 2 ? * 2-6 *)'
     Type: String
   NightScheduleExpression:
     Default: 'cron(45 18 * * ? *)'
@@ -54,8 +54,85 @@ Parameters:
   RegionSearchList:
     Default: 'eu-west-1, eu-west-2'
     Type: String
+  StepFunctionName:
+    Default: sleepSaverDelayedAppTierCF
+    Type: String
 
 Resources:
+  # Defines the StepFunction for the delayed application tier start 15 minutes after the RDS start
+  SLEEPSTEPFN:
+    Type: 'AWS::StepFunctions::StateMachine'
+    Properties:
+      StateMachineName: sleepSaverDelayedAppTierCF
+      RoleArn: !Sub
+        - 'arn:aws:iam::${ACC}:role/sleepSaverStepExec'
+        - ACC: !Ref "AWS::AccountId"
+      DefinitionSubstitutions:
+        LAMBDASUB: !Sub
+          - 'arn:aws:lambda:${REG}:${ACC}:function:${LAMB}:$LATEST'
+          - ACC: !Ref "AWS::AccountId"
+            REG: !Ref "AWS::Region"
+            LAMB: !Ref LambdaName
+      DefinitionS3Location:
+        Bucket: 'evg-sleepsaver-cf'
+        Key: 'stepsyntax.json'
+    DependsOn: IAMROLESLEEPSTATE
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: e2841855-4372-41cd-bd48-074a429d0d03
+  # Defines the Execution Role for the State machine to be able to user
+  IAMROLESLEEPSTATE:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: sleepSaverStepExec
+      Description: >-
+        Sleepsaver execution role for the statemachine to delay application tier
+        start
+      MaxSessionDuration: 4600
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole'
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: states.amazonaws.com
+            Action: 'sts:AssumeRole'
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 08a0de2f-1234-405f-b984-452c7f49113b
+  # Defines the Policy to allow the Lambda to be invoked from the Step Function execution Role
+  IAMPLAMSLEEP:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: sleepSaverInvokeLambda
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+            Resource:
+              - !Sub
+                - 'arn:aws:lambda:${REG}:${ACC}:function:${LAMF}:*'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
+                  LAMF: !Ref LambdaName
+          - Effect: Allow
+            Action:
+              - 'lambda:InvokeFunction'
+            Resource:
+              - !Sub
+                - 'arn:aws:lambda:${REG}:${ACC}:function:${LAMF}'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
+                  LAMF: !Ref LambdaName
+      Roles:
+        - !Ref IAMROLESLEEPSTATE
+    Metadata:
+      'AWS::CloudFormation::Designer':
+        id: 86cc5a8b-6f47-447b-824e-928dc2cb964d
+ # Core of the Legacy Sleep saver CF
   DDBT1TDK8:
     Type: 'AWS::DynamoDB::Table'
     Properties:
@@ -121,6 +198,45 @@ Resources:
         S3Key: 'sleepsaverlambda.zip'
     DependsOn:
       - IAMPDYN
+
+  # Role for the DayTime Event Rule: Target to invoke the Step function
+  IAMRSTEPEX:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      RoleName: sleepSaver-stepfunction-invoke-role
+      Description: 'Sleepsaver: allows the daytime rule target to invoke the delayed start step function'
+      MaxSessionDuration: 4600
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+            Action: 'sts:AssumeRole'
+
+  # Policy that allows the step function to be invoked from the Event Rule Target --> associates itself with IAMRSTEPEX role
+  IAMPSTEPFINV:
+    Type: 'AWS::IAM::Policy'
+    Properties:
+      PolicyName: sleepStepFunctionInvoke
+      Roles:
+        - !Ref IAMRSTEPEX
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Sid: VisualEditor0
+            Effect: Allow
+            Action:
+              - 'states:StartExecution'
+            Resource:
+              - !Sub
+                - 'arn:aws:states:${REG}:${ACC}:stateMachine:${STNAME}'
+                - ACC: !Ref "AWS::AccountId"
+                  REG: !Ref "AWS::Region"
+                  STNAME: !Ref StepFunctionName
+
+
+ # Policy to allow writing to dynamoDB
   IAMPDYN:
     Type: 'AWS::IAM::Policy'
     Properties:
@@ -162,6 +278,8 @@ Resources:
           Arn: !GetAtt LambdaFunction.Arn
           Input: '{ "event": "STOP"}'
       State: ENABLED
+
+  # Defines the Event Rule for waking up severs; contains a dual target to prewarm the Database first and then a step function invokes a delayed start for the app tier
   DayRule:
     Type: 'AWS::Events::Rule'
     Properties:
@@ -172,7 +290,13 @@ Resources:
         - Id: !Ref LambdaName
           Arn: !GetAtt LambdaFunction.Arn
           Input: '{ "event": "START"}'
+        - Id: 'delayedStartStepFunction'
+          Arn: !GetAtt SLEEPSTEPFN.Arn
+          Input: '{ "event": "START"}'
+          RoleArn: !GetAtt IAMRSTEPEX.Arn
       State: ENABLED
+
+
   InvokeLambdaRule:
     Type: 'AWS::Lambda::Permission'
     Properties:
