@@ -43,7 +43,8 @@ Resources:
       RoleArn: !Sub
         - 'arn:aws:iam::${ACC}:role/sleepSaverStepExec'
         - ACC: !Ref "AWS::AccountId"
-
+      DefinitionSubstitutions:
+        LAMBDASUB: "arn:aws:lambda:eu-west-2:307494535005:function:SleepSaverProd:$LATEST"
       DefinitionS3Location:
         Bucket: 'evg-sleepsaver-cf'
         Key: 'stepsyntax.json'
