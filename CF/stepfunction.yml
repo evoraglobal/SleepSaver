@@ -40,7 +40,10 @@ Resources:
     Type: 'AWS::StepFunctions::StateMachine'
     Properties:
       StateMachineName: sleepSaverDelayedAppTierCF
-      RoleArn: 'arn:aws:iam::307494535005:role/sleepSaverStepExec'
+      RoleArn: !Sub
+        - 'arn:aws:iam::${ACC}:role/sleepSaverStepExec'
+        - ACC: !Ref "AWS::AccountId"
+
       DefinitionS3Location:
         Bucket: 'evg-sleepsaver-cf'
         Key: 'stepsyntax.json'
