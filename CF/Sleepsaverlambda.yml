@@ -45,6 +45,9 @@ Parameters:
   LambdaDescription:
     Default: 'Lambda that will look for the Tag DEVDAY : TRUE and will put common assets to sleep at the end of the day, and will start them on next day'
     Type: String
+  CodeBucket:
+    Default: evg-sleepsaver-cf
+    Type: String
   DayScheduleExpression:
     Default: 'cron(10 2 ? * 2-6 *)'
     Type: String
@@ -74,7 +77,7 @@ Resources:
             REG: !Ref "AWS::Region"
             LAMB: !Ref LambdaName
       DefinitionS3Location:
-        Bucket: 'evg-sleepsaver-cf'
+        Bucket: !Ref CodeBucket
         Key: 'stepsyntax.json'
     DependsOn: IAMROLESLEEPSTATE
     Metadata:
@@ -194,7 +197,7 @@ Resources:
           ASGDYNTABLE: asgState
           ASGREGION: eu-west-2
       Code:
-        S3Bucket: 'evg-sleepsaver-cf'
+        S3Bucket: !Ref CodeBucket
         S3Key: 'sleepsaverlambda.zip'
     DependsOn:
       - IAMPDYN
