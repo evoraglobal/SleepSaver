@@ -49,7 +49,7 @@ Parameters:
     Default: evg-sleepsaver-cf
     Type: String
   DayScheduleExpression:
-    Default: 'cron(10 2 ? * 2-6 *)'
+    Default: 'cron(30 1 ? * 2-6 *)'
     Type: String
   NightScheduleExpression:
     Default: 'cron(45 18 * * ? *)'

@@ -4,7 +4,7 @@
   "States": {
     "Wait": {
       "Type": "Wait",
-      "Seconds": 1200,
+      "Seconds": 2400,
       "Next": "Lambda Invoke"
     },
     "Lambda Invoke": {
