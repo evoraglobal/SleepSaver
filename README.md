@@ -1,14 +1,14 @@
 # AWSleepSaver
 
-AWSleepSaver is a tool that allows you to easily manage your AWS resources and reduce costs by shutting down unused resources during non-working hours. It could save you up to 60/70% of AWS costs and carbon footprint as resources won’t be running without any good use.
+AWSleepSaver is a tool that allows you to easily manage your AWS resources and reduce costs by shutting down unused resources during non-working hours. It could save you up to 60/70% of your AWS development  costs and carbon footprint as resources won’t be running without any good use.
 
 ## How it works
 
-AWSleepSaver uses AWS Event Bridge and upon installation adds two rules to your environment: `SleepSaverDayRule` and `SleepSaverNightRule`. These two rules include a programmable cronjob expression which declares when day start and end times are. 
+AWSleepSaver uses AWS Event Bridge and upon installation adds two rules to your environment: `SleepSaverDayRule` and `SleepSaverNightRule`. These two rules include a programmable cronjob expression which declares when day start and end times of each workday are. 
 
-:warning: Only UTC time is supported. Change your cronexpression for clocks going forward/back.
+:warning: Only UTC time is supported. Change your cron expression for clocks going forward/back.
 
-The rules interface with the logic lambda function, `SleepSaverProd`and state machine `sleepSaverDelayedAppTierCF`. These targets go through the process of waking up/shutting down the services which include the tag `DevDay: true`.
+The rules interface with the logic lambda function, `SleepSaverProd`and state machine `sleepSaverDelayedAppTierCF`. These targets go through the process of waking up/shutting down the services which include the tag `DEVDAY: TRUE`.
 
 The tool supports the following AWS services at both a cluster and instance level:
 
@@ -16,18 +16,23 @@ The tool supports the following AWS services at both a cluster and instance leve
 - ECS
 - RDS
 - Elastic Beanstalks (works on an environment level)
-- Autoscale groups belonging to load balancers
+- Autoscale groups (ASGs)
 
 ## Prerequesites
 
-- AWS Account (With **IAM credentials** and **IAM access key pair**)
+- AWS Account (With ** programatic IAM credentials**)
 - AWS CLI v2 or higher
 
 ## Installation
 
 1. From the environment you want to install on, procure AWS creds for AWS CLI usage
 2. Using AWS CLI, ensure you are in the correct bucket directory and run `singleLineInstall.sh`
-3. Add the tag, `DevDay: true` to the environment you wish to use AWSleepSaver
+3. Add the tag, `DEVDAY' setting its value to TRUE` for the resources you wish to be controlled  by AWSleepSaver
+
+Note: This quick installation method uses our version of the packaged code located in the public bucket evg-sleepsaver-cf. If you wish 
+to modify code you will have to package the code yourself and store it in your own private bucket. This can be done by using the createSleepSaverLambda.sh.
+
+### Installation Parameters
 
 | Parameters | Description | Input |
 | --- | --- | --- |
@@ -45,16 +50,12 @@ The tool supports the following AWS services at both a cluster and instance leve
 
 ## How to use
 
-It is easy to incorporate AWSleepSaver. Simply add the `DevDay` tag and set it's boolean status. When the option is set to `true`, AWSleepSaver finds when that resource is set to end for the working day and shuts it down. Similarly, when the next working day starts, it boots back up. For example, shuts down on Friday at 18:00 and reboots on Monday at 08:00.
+It is easy to incorporate AWSleepSaver. Simply add the `DEVDAY` tag and set it's boolean status. When the option is set to `true`, AWSleepSaver finds when that resource is set to end for the working day and shuts it down. Similarly, when the next working day starts, it boots back up. For example, shuts down on Friday at 18:00 and reboots on Monday at 08:00.
+The use of tags reduces developer friction as it is set up decentralised with other developers not needing to interact with AWSleepSaver directly. 
 
-The tool can be overwritten manually using regular methods to turn off/on, and it reduces developer friction as it is set up decentralised with other developers not needing to interact with SleepSaver. There is no need to know install paths or setup restrictions.
-
-The functionality can be temporarily unregistered without removing it by setting the tag to `false`.
+The tool can be overwritten globally by disabling the EventBridge rules, or for individual tagged resources by setting the DEVDAY status to FALSE.
 
 ## Diagram
 
 <!--Waiting on advice-->
 
-## Note
-
-If the user wants to create an updated bucket version separate from Evora, they must create a copy of evg-sleepsaver-cf under their CodeBucket and rename it under Sleepsaverlambda.yml.
