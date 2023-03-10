@@ -4,19 +4,30 @@ AWSleepSaver is a tool that allows you to easily manage your AWS resources and r
 
 ## How it works
 
-AWSleepSaver uses AWS Event Bridge and upon installation adds two rules to your environment: `SleepSaverDayRule` and `SleepSaverNightRule`. These two rules include a programmable cronjob expression which declares when day start and end times of each workday are. 
+AWSleepSaver uses AWS Event Bridge Schedule and upon installation adds two rules to your environment: `SleepSaverDayRule` and `SleepSaverNightRule`. These two rules include a programmable cronjob expression which declares when day start and end times of each workday are. 
 
 :warning: Only UTC time is supported. Change your cron expression for clocks going forward/back.
 
 The rules interface with the logic lambda function, `SleepSaverProd`and state machine `sleepSaverDelayedAppTierCF`. These targets go through the process of waking up/shutting down the services which include the tag `DEVDAY: TRUE`.
 
-The tool supports the following AWS services at both a cluster and instance level:
+The lambda has an environment variable called REGIONLIST which limits the number of regions that are scanned for tagged resources. If you remove this environment variable all accessible regions will be scanned.
+
+
+The tool supports the following AWS services :
 
 - EC2s
 - ECS
-- RDS
+- RDS (at both a cluster and instance level)
 - Elastic Beanstalks (works on an environment level)
 - Autoscale groups (ASGs)
+
+Note: For ASGs , Elastic beanstalks and ECS environments the number of instances will be restored to whatever level were running the night before.
+DynamoDB is used to retain this state information.
+
+As there can be transient errors if the application tier wakes up before the RDS databases become available. The RDS instances will be started 40 minutes before the application tier.
+The RDS are started at the time -defined by the cron expression. The Application tier T+40 minutes. This offset can be configured by changing the **Seconds** parameter in the **stepsyntax.json**  
+If you are not using any RDS databases is recommended to reduce this figure - as there is little need to wait the 40 minutes.
+
 
 ## Prerequesites
 

@@ -46,15 +46,19 @@ Parameters:
     Default: 'Lambda that will look for the Tag DEVDAY : TRUE and will put common assets to sleep at the end of the day, and will start them on next day'
     Type: String
   CodeBucket:
+    Description: This must be the S3 Bucket where the code has been packaged and deployed to
     Default: evg-sleepsaver-cf
     Type: String
   DayScheduleExpression:
+    Description: Cron expression to define the schedule when the services should start, this reads 1.30am, Mon-Friday
     Default: 'cron(30 1 ? * 2-6 *)'
     Type: String
   NightScheduleExpression:
+    Description: Cron expression to define the schedule for when the services should shut-down , this reads 18:45 every day
     Default: 'cron(45 18 * * ? *)'
     Type: String
   RegionSearchList:
+    Description: Define the regions you wish to scan looking for tagged resources.
     Default: 'eu-west-1, eu-west-2'
     Type: String
   StepFunctionName:
@@ -273,7 +277,7 @@ Resources:
   NightRule:
     Type: 'AWS::Events::Rule'
     Properties:
-      Name: SleepSaverNighRule
+      Name: SleepSaverNightRule
       Description: sleepsaverProd Start of Night Schedule
       ScheduleExpression: !Ref NightScheduleExpression
       Targets:
