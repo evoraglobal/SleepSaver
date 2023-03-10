@@ -50,13 +50,13 @@ to modify code you will have to package the code yourself and store it in your o
 | `--stack-name` | defines cloud formation name | Any String |
 | `--template-file` | local setup file to build environment | Defaults to `./sleepsaverlambda.yml` |
 | `--region` | Set environment region | Choose predefined [region](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html#Concepts.RegionsAndAvailabilityZones.Regions) |
-| `--parameter-overrides` | programmable option housing a cronjob expression for changing default shutoff and start times | There are two available options: <br />- "DayScheuldeExpression" <br />- "NightScheuldeExpression" |
+| `--parameter-overrides` | programmable option housing a cronjob expression for changing default shutoff and start times | There are two available options: <br />- "DayScheduleExpression" <br />- "NightScheduleExpression" |
 
 `--parameter-overrides` Examples:
 
 ```bash
---parameter-overrides = "DayScheuldeExpression=cron(29 7 ? * 2-6 *)" # Read as "at 07:29 turn on, when on days 2-6" (Monday-Friday).
---parameter-overrides = "NightScheuldeExpression=cron(45 18 * * ? *)" # Read as "at 18:45, turn off every day".
+--parameter-overrides = "DayScheduleExpression=cron(29 7 ? * 2-6 *)" # Read as "at 07:29 turn on, when on days 2-6" (Monday-Friday).
+--parameter-overrides = "NightScheduleExpression=cron(45 18 * * ? *)" # Read as "at 18:45, turn off every day".
 ```
 
 ## How to use
