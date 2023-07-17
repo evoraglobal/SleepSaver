@@ -54,8 +54,8 @@ Parameters:
     Default: 'cron(30 1 ? * 2-6 *)'
     Type: String
   NightScheduleExpression:
-    Description: Cron expression to define the schedule for when the services should shut-down , this reads 18:45 every day
-    Default: 'cron(45 18 * * ? *)'
+    Description: Cron expression to define the schedule for when the services should shut-down , this reads 18:45 Mon-Friday
+    Default: 'cron(45 18 ? * 2-6 *)'
     Type: String
   RegionSearchList:
     Description: Define the regions you wish to scan looking for tagged resources.
